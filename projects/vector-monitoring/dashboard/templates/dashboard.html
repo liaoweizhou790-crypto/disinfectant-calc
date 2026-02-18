@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>病媒生物监测数据看板</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .header p {
+            opacity: 0.9;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+        }
+        .card-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+        .card-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        .card-label {
+            color: #666;
+            font-size: 14px;
+        }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+            border-left: 4px solid #667eea;
+            padding-left: 12px;
+        }
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        .section-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin: 40px 0 20px;
+            color: #333;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #999;
+        }
+        @media (max-width: 768px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🦟 病媒生物监测数据看板</h1>
+        <p>实时监测数据分析与可视化</p>
+    </div>
+
+    <div class="container">
+        <!-- 汇总卡片 -->
+        <div class="summary-cards" id="summaryCards">
+            <div class="card">
+                <div class="card-icon">🐭</div>
+                <div class="card-value" id="rodentCount">-</div>
+                <div class="card-label">鼠密度监测</div>
+            </div>
+            <div class="card">
+                <div class="card-icon">🦟</div>
+                <div class="card-value" id="mosquitoCount">-</div>
+                <div class="card-label">蚊密度监测</div>
+            </div>
+            <div class="card">
+                <div class="card-icon">🪰</div>
+                <div class="card-value" id="flyCount">-</div>
+                <div class="card-label">蝇密度监测</div>
+            </div>
+            <div class="card">
+                <div class="card-icon">🪳</div>
+                <div class="card-value" id="cockroachCount">-</div>
+                <div class="card-label">蟑密度监测</div>
+            </div>
+            <div class="card">
+                <div class="card-icon">🕷️</div>
+                <div class="card-value" id="tickCount">-</div>
+                <div class="card-label">蜱虫监测</div>
+            </div>
+            <div class="card">
+                <div class="card-icon">📍</div>
+                <div class="card-value" id="pointCount">-</div>
+                <div class="card-label">监测点位</div>
+            </div>
+        </div>
+
+        <h2 class="section-title">🐭 鼠密度监测</h2>
+        <div class="chart-grid">
+            <div class="chart-container">
+                <div class="chart-title">捕获数量趋势</div>
+                <div class="chart-wrapper">
+                    <canvas id="rodentTrendChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">捕获率变化</div>
+                <div class="chart-wrapper">
+                    <canvas id="rodentRateChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="section-title">🦟 蚊密度监测</h2>
+        <div class="chart-grid">
+            <div class="chart-container">
+                <div class="chart-title">蚊虫种类分布</div>
+                <div class="chart-wrapper">
+                    <canvas id="mosquitoTypeChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">蚊密度趋势</div>
+                <div class="chart-wrapper">
+                    <canvas id="mosquitoTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="section-title">🪰 蝇密度监测</h2>
+        <div class="chart-grid">
+            <div class="chart-container">
+                <div class="chart-title">蝇类种类分布</div>
+                <div class="chart-wrapper">
+                    <canvas id="flyTypeChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">蝇密度趋势</div>
+                <div class="chart-wrapper">
+                    <canvas id="flyTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="section-title">🪳 蟑密度监测</h2>
+        <div class="chart-grid">
+            <div class="chart-container">
+                <div class="chart-title">蟑螂捕获趋势</div>
+                <div class="chart-wrapper">
+                    <canvas id="cockroachTrendChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">阳性率变化</div>
+                <div class="chart-wrapper">
+                    <canvas id="cockroachRateChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="section-title">🕷️ 蜱虫监测</h2>
+        <div class="chart-grid">
+            <div class="chart-container">
+                <div class="chart-title">蜱虫种类分布</div>
+                <div class="chart-wrapper">
+                    <canvas id="tickTypeChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">蜱虫监测趋势</div>
+                <div class="chart-wrapper">
+                    <canvas id="tickTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 图表配置
+        Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        Chart.defaults.color = '#666';
+
+        // 颜色配置
+        const colors = {
+            primary: '#667eea',
+            secondary: '#764ba2',
+            success: '#48bb78',
+            warning: '#ed8936',
+            danger: '#f56565',
+            info: '#4299e1'
+        };
+
+        // 加载汇总数据
+        async function loadSummary() {
+            try {
+                const response = await fetch('/api/summary');
+                const data = await response.json();
+                document.getElementById('rodentCount').textContent = data['鼠密度'] || 0;
+                document.getElementById('mosquitoCount').textContent = data['蚊密度'] || 0;
+                document.getElementById('flyCount').textContent = data['蝇密度'] || 0;
+                document.getElementById('cockroachCount').textContent = data['蟑密度'] || 0;
+                document.getElementById('tickCount').textContent = data['蜱虫监测'] || 0;
+                document.getElementById('pointCount').textContent = data['监测点位'] || 0;
+            } catch (error) {
+                console.error('加载汇总数据失败:', error);
+            }
+        }
+
+        // 加载鼠密度数据
+        async function loadRodentData() {
+            try {
+                const response = await fetch('/api/rodent-stats');
+                const data = await response.json();
+
+                // 捕获数量趋势
+                new Chart(document.getElementById('rodentTrendChart'), {
+                    type: 'line',
+                    data: {
+                        labels: data.dates,
+                        datasets: [{
+                            label: '捕获总数',
+                            data: data.totals,
+                            borderColor: colors.primary,
+                            backgroundColor: colors.primary + '20',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+
+                // 捕获率变化
+                new Chart(document.getElementById('rodentRateChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: data.dates,
+                        datasets: [{
+                            label: '捕获率(%)',
+                            data: data.rates,
+                            backgroundColor: colors.warning
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('加载鼠密度数据失败:', error);
+            }
+        }
+
+        // 加载蚊密度数据
+        async function loadMosquitoData() {
+            try {
+                const response = await fetch('/api/mosquito-stats');
+                const data = await response.json();
+
+                // 蚊虫种类分布
+                const totalPipiens = data.culex_pipiens.reduce((a, b) => a + b, 0);
+                const totalQuinque = data.culex_quinquefasciatus.reduce((a, b) => a + b, 0);
+                const totalAlbo = data.aedes_albopictus.reduce((a, b) => a + b, 0);
+
+                new Chart(document.getElementById('mosquitoTypeChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['淡色库蚊', '致倦库蚊', '白纹伊蚊'],
+                        datasets: [{
+                            data: [totalPipiens, totalQuinque, totalAlbo],
+                            backgroundColor: [colors.primary, colors.secondary, colors.success]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+
+                // 蚊密度趋势
+                new Chart(document.getElementById('mosquitoTrendChart'), {
+                    type: 'line',
+                    data: {
+                        labels: data.dates,
+                        datasets: [{
+                            label: '蚊虫总数',
+                            data: data.totals,
+                            borderColor: colors.primary,
+                            backgroundColor: colors.primary + '20',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('加载蚊密度数据失败:', error);
+            }
+        }
+
+        // 加载蝇密度数据
+        async function loadFlyData() {
+            try {
+                const response = await fetch('/api/fly-stats');
+                const data = await response.json();
+
+                // 蝇类种类分布
+                const totalHouse = data.house_fly.reduce((a, b) => a + b, 0);
+                const totalChrysomya = data.chrysomya.reduce((a, b) => a + b, 0);
+                const totalLucilia = data.lucilia.reduce((a, b) => a + b, 0);
+
+                new Chart(document.getElementById('flyTypeChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['家蝇', '大头金蝇', '丝光绿蝇'],
+                        datasets: [{
+                            data: [totalHouse, totalChrysomya, totalLucilia],
+                            backgroundColor: [colors.warning, colors.danger, colors.info]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+
+                // 蝇密度趋势
+                new Chart(document.getElementById('flyTrendChart'), {
+                    type: 'line',
+                    data: {
+                        labels: data.dates,
+                        datasets: [{
+                            label: '蝇类总数',
+                            data: data.totals,
+                            borderColor: colors.warning,
+                            backgroundColor: colors.warning + '20',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('加载蝇密度数据失败:', error);
+            }
+        }
+
+        // 加载蟑密度数据
+        async function loadCockroachData() {
+            try {
+                const response = await fetch('/api/cockroach-stats');
+                const data = await response.json();
+
+                // 蟑螂捕获趋势
+                new Chart(document.getElementById('cockroachTrendChart'), {
+                    type: 'line',
+                    data: {
+                        labels: data.dates,
+                        datasets: [{
+                            label: '捕获总数',
+                            data: data.totals,
+                            borderColor: colors.danger,
+                            backgroundColor: colors.danger + '20',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+
+                // 阳性率变化
+                new Chart(document.getElementById('cockroachRateChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: data.dates,
+                        datasets: [{
+                            label: '阳性率(%)',
+                            data: data.positive_rates,
+                            backgroundColor: colors.danger
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('加载蟑密度数据失败:', error);
+            }
+        }
+
+        // 加载蜱虫数据
+        async function loadTickData() {
+            try {
+                const response = await fetch('/api/tick-stats');
+                const data = await response.json();
+
+                // 蜱虫种类分布
+                const totalLongi = data.longicornis.reduce((a, b) => a + b, 0);
+                const totalSilvarum = data.silvarum.reduce((a, b) => a + b, 0);
+
+                new Chart(document.getElementById('tickTypeChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['长角血蜱', '森林革蜱'],
+                        datasets: [{
+                            data: [totalLongi, totalSilvarum],
+                            backgroundColor: [colors.secondary, colors.info]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+
+                // 蜱虫监测趋势
+                new Chart(document.getElementById('tickTrendChart'), {
+                    type: 'line',
+                    data: {
+                        labels: data.dates,
+                        datasets: [{
+                            label: '蜱虫总数',
+                            data: data.totals,
+                            borderColor: colors.secondary,
+                            backgroundColor: colors.secondary + '20',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('加载蜱虫数据失败:', error);
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSummary();
+            loadRodentData();
+            loadMosquitoData();
+            loadFlyData();
+            loadCockroachData();
+            loadTickData();
+        });
+    </script>
+</body>
+</html>
