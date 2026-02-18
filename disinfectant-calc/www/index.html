@@ -6,11 +6,11 @@
     <meta name="theme-color" content="#667eea">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="消毒剂配比">
-    <meta name="description" content="柳州市疾病预防控制中心消毒剂配比系统">
+    <meta name="apple-mobile-web-app-title" content="病原微生物防控">
+    <meta name="description" content="柳州市疾病预防控制中心病原微生物防控系统">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192x192.png">
-    <title>柳州市疾病预防控制中心消毒剂配比系统（v1.3.7）</title>
+    <title>柳州市疾病预防控制中心病原微生物防控系统（v1.4.3）</title>
     <style>
         * {
             margin: 0;
@@ -262,14 +262,16 @@
 </head>
 <body>
     <div class="container">
-        <h1>🧴 柳州市疾病预防控制中心消毒剂配比系统（v1.3.7）</h1>
+        <h1>🧬 柳州市疾病预防控制中心病原微生物防控系统（v1.4.3）</h1>
         
         <div class="tabs">
             <button class="tab active" onclick="switchTab('calc')">配比计算</button>
             <button class="tab" onclick="switchTab('disease')">传染病方案</button>
+            <button class="tab" onclick="switchTab('pathogen')">病原微生物</button>
             <button class="tab" onclick="switchTab('recommend')">推荐浓度</button>
             <button class="tab" onclick="switchTab('records')">配比记录</button>
             <button class="tab" onclick="switchTab('presets')">常用方案</button>
+            <button class="tab" onclick="switchTab('aiConfig')">🤖 AI配置</button>
         </div>
         
         <div class="content">
@@ -387,6 +389,88 @@
                 </div>
             </div>
             
+            <!-- 病原微生物查询 -->
+            <div id="pathogen" class="tab-content">
+                <!-- 搜索区域 -->
+                <div class="form-group" style="background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                    <label style="font-size: 16px; color: #667eea; margin-bottom: 10px;">🔍 搜索病原微生物</label>
+                    <input type="text" id="pathogenSearch" placeholder="输入病原名称、疾病名称或分类学地位（如：新冠、结核、炭疽、埃博拉）" style="width: 100%; padding: 15px; font-size: 15px; border: 2px solid #667eea; border-radius: 8px; margin-bottom: 10px;" onkeyup="searchPathogen(event)">
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="searchPathogen()" style="flex: 1; padding: 12px;">🔍 搜索</button>
+                        <button class="btn btn-secondary" onclick="clearPathogenSearch()" style="padding: 12px 20px;">清空</button>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>危害程度分类</label>
+                        <select id="pathogenCategoryFilter" onchange="filterPathogenByCategory()">
+                            <option value="">全部</option>
+                            <option value="第一类">第一类（高致病性）</option>
+                            <option value="第二类">第二类（中等致病性）</option>
+                            <option value="第三类">第三类（低致病性）</option>
+                            <option value="第四类">第四类（无或极低致病性）</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>病原类型</label>
+                        <select id="pathogenTypeFilter" onchange="filterPathogenByType()">
+                            <option value="">全部</option>
+                            <option value="病毒">病毒</option>
+                            <option value="细菌">细菌/放线菌/衣原体/支原体/立克次体/螺旋体</option>
+                            <option value="真菌">真菌</option>
+                            <option value="朊病毒">朊病毒</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>生物安全实验室等级</label>
+                        <select id="bslFilter" onchange="filterPathogenByBSL()">
+                            <option value="">全部</option>
+                            <option value="BSL-4">BSL-4</option>
+                            <option value="BSL-3">BSL-3</option>
+                            <option value="BSL-2">BSL-2</option>
+                            <option value="BSL-1">BSL-1</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>快速筛选</label>
+                        <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                            <button class="btn btn-small btn-secondary" onclick="showHighRiskPathogens()">🔴 第一类病原</button>
+                            <button class="btn btn-small btn-secondary" onclick="showRespiratoryPathogens()">🫁 呼吸道传播</button>
+                            <button class="btn btn-small btn-secondary" onclick="showBloodPathogens()">🩸 血液传播</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="pathogenResult" style="margin-top: 20px;">
+                    <div class="empty-state">
+                        <p style="font-size: 16px; margin-bottom: 15px;">🔍 请输入关键词搜索病原微生物，或使用筛选条件</p>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px; text-align: left; border-left: 4px solid #667eea;">
+                            <p style="font-size: 13px; color: #666; margin: 0 0 10px 0; font-weight: bold;">📚 数据来源：</p>
+                            <p style="font-size: 12px; color: #666; margin: 0 0 5px 0;">• 《人间传染的病原微生物目录》（2023年版）</p>
+                            <p style="font-size: 12px; color: #666; margin: 0 0 5px 0;">• 发布机构：中华人民共和国国家卫生健康委员会</p>
+                            <p style="font-size: 12px; color: #666; margin: 0 0 5px 0;">• 发布日期：2023年8月18日</p>
+                            <p style="font-size: 12px; color: #999; margin: 10px 0 0 0; font-style: italic;">⚠️ 本模块仅供专业人员参考，实际操作请遵循最新版《人间传染的病原微生物目录》及相关法规</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="pathogenDetail" style="display: none; margin-top: 20px;">
+                    <div class="result-box">
+                        <h3 id="detailTitle">病原详情</h3>
+                        <div id="detailContent"></div>
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                            <h4>🧴 推荐消毒方案</h4>
+                            <div id="disinfectionRecommendation"></div>
+                            <button class="btn btn-primary" onclick="applyPathogenDisinfection()" style="margin-top: 10px;">应用此消毒方案</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- 推荐浓度 -->
             <div id="recommend" class="tab-content">
                 <div class="form-group">
@@ -426,6 +510,92 @@
             <!-- 常用方案 -->
             <div id="presets" class="tab-content">
                 <div id="presetsList"></div>
+            </div>
+            
+            <!-- AI配置 -->
+            <div id="aiConfig" class="tab-content">
+                <div style="background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                    <h3 style="color: #667eea; margin-bottom: 15px;">🤖 AI API 配置</h3>
+                    <p style="color: #666; font-size: 13px; margin-bottom: 15px;">
+                        配置AI模型API，用于流调报告智能分析。支持OpenAI、Kimi、Claude等多种模型。
+                    </p>
+                </div>
+                
+                <div class="form-group">
+                    <label>选择AI模型提供商</label>
+                    <select id="aiProvider" onchange="updateAIConfigFields()">
+                        <option value="kimi">Kimi (Moonshot)</option>
+                        <option value="openai">OpenAI (GPT)</option>
+                        <option value="claude">Claude (Anthropic)</option>
+                        <option value="custom">自定义 API</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>API Base URL</label>
+                    <input type="text" id="aiBaseUrl" placeholder="https://api.moonshot.cn/v1">
+                    <small style="color: #999; font-size: 12px;">默认使用官方API地址，如使用代理请修改</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>API Key</label>
+                    <input type="password" id="aiApiKey" placeholder="输入您的API密钥">
+                    <small style="color: #999; font-size: 12px;">密钥仅保存在本地，不会上传到服务器</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>模型名称</label>
+                    <input type="text" id="aiModel" placeholder="如：kimi-coding/k2p5">
+                    <small style="color: #999; font-size: 12px;">不同提供商的模型名称格式不同</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>温度 (Temperature)</label>
+                    <input type="range" id="aiTemperature" min="0" max="2" step="0.1" value="0.7" oninput="document.getElementById('tempValue').textContent = this.value">
+                    <span id="tempValue" style="color: #667eea; font-weight: bold;">0.7</span>
+                    <small style="color: #999; font-size: 12px; display: block;">较低值输出更确定，较高值输出更多样</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>最大Token数</label>
+                    <input type="number" id="aiMaxTokens" value="4096" min="512" max="8192" step="512">
+                    <small style="color: #999; font-size: 12px;">限制AI回复的最大长度</small>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="aiLocalMode" style="width: auto; margin-right: 8px;">
+                        <span>使用本地模型（数据不上传云端，更安全）</span>
+                    </label>
+                    <small style="color: #999; font-size: 12px; display: block; margin-top: 5px;">
+                        适用于高致病性病原流调分析，需在本地部署LLM
+                    </small>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="saveAIConfig()" style="flex: 1;">💾 保存配置</button>
+                    <button class="btn btn-secondary" onclick="testAIConnection()">🧪 测试连接</button>
+                    <button class="btn btn-secondary" onclick="resetAIConfig()">🔄 恢复默认</button>
+                </div>
+                
+                <div id="aiTestResult" style="margin-top: 15px;"></div>
+                
+                <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-top: 20px; border-radius: 5px;">
+                    <h4 style="color: #856404; margin-bottom: 10px;">📋 常用模型配置示例</h4>
+                    <div style="font-size: 12px; color: #856404; line-height: 1.8;">
+                        <p><strong>Kimi (推荐):</strong></p>
+                        <p>• Base URL: https://api.moonshot.cn/v1</p>
+                        <p>• 模型: kimi-coding/k2p5</p>
+                        <br>
+                        <p><strong>OpenAI:</strong></p>
+                        <p>• Base URL: https://api.openai.com/v1</p>
+                        <p>• 模型: gpt-4 或 gpt-3.5-turbo</p>
+                        <br>
+                        <p><strong>本地模型 (Ollama):</strong></p>
+                        <p>• Base URL: http://localhost:11434/v1</p>
+                        <p>• 模型: llama3.1 或 qwen2.5</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -2141,10 +2311,676 @@ function showFileLocationGuide(filename) {
         document.body.appendChild(modal);
     }, 500);
 }
+
+// ==================== 病原微生物数据库 ====================
+const pathogenDB = {
+    // 第一类病毒（高致病性）
+    "天花病毒": { type: "病毒", category: "第一类", bsl: "BSL-4", family: "痘病毒科", disease: "天花", transmission: "呼吸道/接触", disinfection: { type: "含氯消毒剂", conc: "2000", unit: "mg/L", time: "60分钟", note: "高致病性病毒，需最高级别防护" } },
+    "猴痘病毒": { type: "病毒", category: "第一类", bsl: "BSL-3", family: "痘病毒科", disease: "猴痘", transmission: "接触/飞沫", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "病毒培养物按A类运输" } },
+    "埃博拉病毒": { type: "病毒", category: "第一类", bsl: "BSL-4", family: "丝状病毒科", disease: "埃博拉出血热", transmission: "接触/体液", disinfection: { type: "含氯消毒剂", conc: "5000", unit: "mg/L", time: "60分钟", note: "致死率高，严格防护" } },
+    "马尔堡病毒": { type: "病毒", category: "第一类", bsl: "BSL-4", family: "丝状病毒科", disease: "马尔堡出血热", transmission: "接触/体液", disinfection: { type: "含氯消毒剂", conc: "5000", unit: "mg/L", time: "60分钟", note: "高致死性出血热" } },
+    "拉沙热病毒": { type: "病毒", category: "第一类", bsl: "BSL-4", family: "沙粒病毒科", disease: "拉沙热", transmission: "接触/呼吸道", disinfection: { type: "含氯消毒剂", conc: "2000", unit: "mg/L", time: "60分钟", note: "西非出血热" } },
+    "尼帕病毒": { type: "病毒", category: "第一类", bsl: "BSL-4", family: "副黏病毒科", disease: "尼帕病毒性脑炎", transmission: "接触/飞沫", disinfection: { type: "含氯消毒剂", conc: "2000", unit: "mg/L", time: "60分钟", note: "人畜共患病毒" } },
+    "亨德拉病毒": { type: "病毒", category: "第一类", bsl: "BSL-4", family: "副黏病毒科", disease: "亨德拉病毒病", transmission: "接触", disinfection: { type: "含氯消毒剂", conc: "2000", unit: "mg/L", time: "60分钟", note: "源自蝙蝠" } },
+    "黄热病毒": { type: "病毒", category: "第一类", bsl: "BSL-3", family: "黄病毒科", disease: "黄热病", transmission: "蚊媒", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "有疫苗，蚊媒传播" } },
+    "克里米亚-刚果出血热病毒": { type: "病毒", category: "第一类", bsl: "BSL-3", family: "内罗病毒科", disease: "克里米亚-刚果出血热", transmission: "蜱媒/接触", disinfection: { type: "含氯消毒剂", conc: "2000", unit: "mg/L", time: "60分钟", note: "新疆出血热病毒" } },
+    "东方马脑炎病毒": { type: "病毒", category: "第一类", bsl: "BSL-3", family: "披膜病毒科", disease: "东方马脑炎", transmission: "蚊媒", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "蚊媒病毒" } },
+    
+    // 第二类病毒
+    "新型冠状病毒": { type: "病毒", category: "第二类", bsl: "BSL-3", family: "冠状病毒科", disease: "COVID-19", transmission: "呼吸道/接触", disinfection: { type: "含氯消毒剂", conc: "500-1000", unit: "mg/L", time: "30分钟", note: "一般物体表面500mg/L，污染严重1000mg/L" } },
+    "SARS冠状病毒": { type: "病毒", category: "第二类", bsl: "BSL-3", family: "冠状病毒科", disease: "SARS", transmission: "呼吸道/接触", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "严重急性呼吸综合征" } },
+    "MERS冠状病毒": { type: "病毒", category: "第二类", bsl: "BSL-3", family: "冠状病毒科", disease: "中东呼吸综合征", transmission: "呼吸道/接触", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "中东呼吸综合征" } },
+    "狂犬病毒": { type: "病毒", category: "第二类", bsl: "BSL-3", family: "弹状病毒科", disease: "狂犬病", transmission: "咬伤/抓伤", disinfection: { type: "季铵盐类", conc: "1000", unit: "mg/L", time: "30分钟", note: "伤口处理用肥皂水或季铵盐" } },
+    "HIV": { type: "病毒", category: "第二类", bsl: "BSL-3", family: "逆转录病毒科", disease: "艾滋病", transmission: "血液/体液", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "30分钟", note: "75%乙醇、含氯消毒剂均有效" } },
+    "乙型脑炎病毒": { type: "病毒", category: "第二类", bsl: "BSL-2", family: "黄病毒科", disease: "流行性乙型脑炎", transmission: "蚊媒", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "30分钟", note: "有疫苗，蚊媒传播" } },
+    "大别班达病毒": { type: "病毒", category: "第二类", bsl: "BSL-2", family: "白蛉纤细病毒科", disease: "发热伴血小板减少综合征", transmission: "蜱媒", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "发热伴血小板减少综合征病毒" } },
+    "汉坦病毒": { type: "病毒", category: "第二类", bsl: "BSL-3", family: "汉坦病毒科", disease: "肾综合征出血热", transmission: "鼠类排泄物", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "60分钟", note: "流行性出血热" } },
+    "脊髓灰质炎病毒": { type: "病毒", category: "第二类", bsl: "BSL-3", family: "小RNA病毒科", disease: "脊髓灰质炎", transmission: "粪-口", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "肠道病毒，注意粪-口传播" } },
+    "高致病性禽流感病毒": { type: "病毒", category: "第二类", bsl: "BSL-3", family: "正黏病毒科", disease: "禽流感", transmission: "呼吸道/接触", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "H5N1、H7N9等高致病性毒株" } },
+    
+    // 第三类病毒
+    "流感病毒": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "正黏病毒科", disease: "流行性感冒", transmission: "呼吸道", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "30分钟", note: "空气消毒可用过氧乙酸" } },
+    "诺如病毒": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "杯状病毒科", disease: "急性胃肠炎", transmission: "粪-口", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "对酒精不敏感，需用含氯消毒剂" } },
+    "登革病毒": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "黄病毒科", disease: "登革热", transmission: "蚊媒", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "30分钟", note: "伊蚊传播" } },
+    "寨卡病毒": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "黄病毒科", disease: "寨卡病毒病", transmission: "蚊媒", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "30分钟", note: "蚊媒传播" } },
+    "丙型肝炎病毒": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "黄病毒科", disease: "丙型肝炎", transmission: "血液/体液", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "30分钟", note: "血液传播" } },
+    "单纯疱疹病毒": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "疱疹病毒科", disease: "疱疹", transmission: "接触", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "接触传播" } },
+    "水痘-带状疱疹病毒": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "疱疹病毒科", disease: "水痘/带状疱疹", transmission: "呼吸道/接触", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "空气飞沫传播" } },
+    "EB病毒": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "疱疹病毒科", disease: "传染性单核细胞增多症", transmission: "唾液", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "唾液传播" } },
+    "巨细胞病毒": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "疱疹病毒科", disease: "巨细胞病毒感染", transmission: "接触", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "接触传播" } },
+    "麻疹病毒": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "副黏病毒科", disease: "麻疹", transmission: "呼吸道", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "30分钟", note: "空气传播，传染性极强" } },
+    "流行性腮腺炎病毒": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "副黏病毒科", disease: "流行性腮腺炎", transmission: "呼吸道", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "30分钟", note: "飞沫传播" } },
+    "风疹病毒": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "马氏病毒科", disease: "风疹", transmission: "呼吸道", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "30分钟", note: "孕妇感染可致畸" } },
+    "甲型肝炎病毒": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "小RNA病毒科", disease: "甲型肝炎", transmission: "粪-口", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "肠道传播" } },
+    "戊型肝炎病毒": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "戊型肝炎病毒科", disease: "戊型肝炎", transmission: "粪-口", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "肠道传播，孕妇死亡率高" } },
+    "轮状病毒": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "呼肠孤病毒科", disease: "婴幼儿腹泻", transmission: "粪-口", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "婴幼儿腹泻主要病原" } },
+    "柯萨奇病毒": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "小RNA病毒科", disease: "手足口病/疱疹性咽峡炎", transmission: "粪-口/呼吸道", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "30分钟", note: "肠道病毒" } },
+    "肠道病毒A71型": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "小RNA病毒科", disease: "手足口病", transmission: "粪-口/呼吸道", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "30分钟", note: "可引起重症手足口病" } },
+    "鼻病毒": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "小RNA病毒科", disease: "普通感冒", transmission: "呼吸道", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "普通感冒主要病原" } },
+    "乙型肝炎病毒": { type: "病毒", category: "第三类", bsl: "BSL-2", family: "嗜肝DNA病毒科", disease: "乙型肝炎", transmission: "血液/体液", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "30分钟", note: "75%乙醇无效，需用含氯消毒剂" } },
+    
+    // 第二类细菌
+    "结核分枝杆菌": { type: "细菌", category: "第二类", bsl: "BSL-3", family: "分枝杆菌属", disease: "结核病", transmission: "呼吸道", disinfection: { type: "含氯消毒剂", conc: "2000", unit: "mg/L", time: "60分钟", note: "高抵抗力，需高浓度消毒剂" } },
+    "炭疽芽孢杆菌": { type: "细菌", category: "第二类", bsl: "BSL-3", family: "芽孢杆菌属", disease: "炭疽", transmission: "接触/吸入", disinfection: { type: "含氯消毒剂", conc: "5000", unit: "mg/L", time: "120分钟", note: "芽孢抵抗力极强" } },
+    "鼠疫耶尔森菌": { type: "细菌", category: "第二类", bsl: "BSL-3", family: "肠杆菌科", disease: "鼠疫", transmission: "鼠蚤/呼吸道", disinfection: { type: "含氯消毒剂", conc: "2000", unit: "mg/L", time: "60分钟", note: "甲类传染病" } },
+    "霍乱弧菌": { type: "细菌", category: "第二类", bsl: "BSL-2", family: "弧菌科", disease: "霍乱", transmission: "粪-口", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "甲类传染病，注意水源消毒" } },
+    "布鲁氏菌": { type: "细菌", category: "第二类", bsl: "BSL-3", family: "布鲁氏菌属", disease: "布鲁氏菌病", transmission: "接触/食入", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "人畜共患病" } },
+    "土拉弗朗西斯菌": { type: "细菌", category: "第二类", bsl: "BSL-3", family: "弗朗西斯菌属", disease: "土拉菌病", transmission: "接触/吸入", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "兔热病" } },
+    "鼻疽伯克霍尔德菌": { type: "细菌", category: "第二类", bsl: "BSL-3", family: "伯克霍尔德菌属", disease: "鼻疽", transmission: "接触", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "人畜共患病" } },
+    "类鼻疽伯克霍尔德菌": { type: "细菌", category: "第二类", bsl: "BSL-3", family: "伯克霍尔德菌属", disease: "类鼻疽", transmission: "接触", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "土壤来源" } },
+    "牛分枝杆菌": { type: "细菌", category: "第二类", bsl: "BSL-3", family: "分枝杆菌属", disease: "牛结核病", transmission: "呼吸道", disinfection: { type: "含氯消毒剂", conc: "2000", unit: "mg/L", time: "60分钟", note: "类似结核分枝杆菌" } },
+    "立克次体": { type: "细菌", category: "第二类", bsl: "BSL-3", family: "立克次体属", disease: "斑疹伤寒/斑点热", transmission: "蜱媒/虱媒", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "细胞内寄生" } },
+    "恙虫病东方体": { type: "细菌", category: "第二类", bsl: "BSL-3", family: "东方体属", disease: "恙虫病", transmission: "恙螨", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "丛林斑疹伤寒" } },
+    "嗜吞噬细胞无形体": { type: "细菌", category: "第二类", bsl: "BSL-3", family: "无形体属", disease: "人粒细胞无形体病", transmission: "蜱媒", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "蜱传播" } },
+    "伯氏考克斯氏体": { type: "细菌", category: "第二类", bsl: "BSL-3", family: "考克斯体属", disease: "Q热", transmission: "呼吸道", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "耐热抵抗力强" } },
+    
+    // 第三类细菌
+    "金黄色葡萄球菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "葡萄球菌属", disease: "化脓性感染/食物中毒", transmission: "接触/食入", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "常见致病菌" } },
+    "化脓链球菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "链球菌属", disease: "咽炎/猩红热", transmission: "呼吸道", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "A群链球菌" } },
+    "肺炎链球菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "链球菌属", disease: "肺炎/脑膜炎", transmission: "呼吸道", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "社区获得性肺炎常见" } },
+    "肠球菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "肠球菌属", disease: "尿路感染/心内膜炎", transmission: "接触", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "医院感染重要病原" } },
+    "大肠埃希菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "肠杆菌科", disease: "腹泻/尿路感染", transmission: "粪-口", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "条件致病菌" } },
+    "肺炎克雷伯菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "肠杆菌科", disease: "肺炎/败血症", transmission: "呼吸道/接触", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "产ESBL菌株耐药" } },
+    "沙门氏菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "肠杆菌科", disease: "伤寒/食物中毒", transmission: "粪-口", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "食物中毒常见" } },
+    "志贺氏菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "肠杆菌科", disease: "细菌性痢疾", transmission: "粪-口", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "菌痢" } },
+    "副溶血弧菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "弧菌科", disease: "食物中毒", transmission: "食入", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "海产品相关" } },
+    "创伤弧菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "弧菌科", disease: "伤口感染/败血症", transmission: "伤口接触", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "海洋创伤弧菌" } },
+    "流感嗜血杆菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "嗜血杆菌属", disease: "肺炎/脑膜炎", transmission: "呼吸道", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "儿童感染" } },
+    "百日咳鲍特氏菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "鲍特氏菌属", disease: "百日咳", transmission: "呼吸道", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "呼吸道传播" } },
+    "脑膜炎奈瑟菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "奈瑟菌属", disease: "流行性脑脊髓膜炎", transmission: "呼吸道", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "流脑，空气传播" } },
+    "淋病奈瑟菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "奈瑟菌属", disease: "淋病", transmission: "性接触", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "性传播疾病" } },
+    "幽门螺杆菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "螺杆菌属", disease: "胃炎/胃溃疡/胃癌", transmission: "粪-口", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "胃部定植" } },
+    "铜绿假单胞菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "假单胞菌属", disease: "医院感染", transmission: "接触", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "多重耐药" } },
+    "鲍曼不动杆菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "不动杆菌属", disease: "医院感染", transmission: "接触", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "多重耐药" } },
+    "军团菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "军团菌属", disease: "军团菌病", transmission: "呼吸道", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "空调水源传播" } },
+    "破伤风梭菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "梭菌属", disease: "破伤风", transmission: "伤口", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "芽孢形成" } },
+    "肉毒梭菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "梭菌属", disease: "肉毒中毒", transmission: "食入", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "毒素按第二类管理" } },
+    "产气荚膜梭菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "梭菌属", disease: "气性坏疽/食物中毒", transmission: "伤口/食入", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "厌氧菌" } },
+    "艰难梭菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "梭菌属", disease: "抗生素相关腹泻", transmission: "粪-口", disinfection: { type: "含氯消毒剂", conc: "5000", unit: "mg/L", time: "10分钟", note: "芽孢抵抗力强" } },
+    "梅毒螺旋体": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "密螺旋体属", disease: "梅毒", transmission: "性接触/母婴", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "苍白密螺旋体" } },
+    "钩端螺旋体": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "钩端螺旋体属", disease: "钩端螺旋体病", transmission: "接触疫水", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "水传播" } },
+    "伯氏疏螺旋体": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "疏螺旋体属", disease: "莱姆病", transmission: "蜱媒", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "蜱传播" } },
+    "衣原体": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "衣原体属", disease: "沙眼/泌尿生殖道感染", transmission: "接触", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "细胞内寄生" } },
+    "支原体": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "支原体属", disease: "肺炎/尿道炎", transmission: "呼吸道/接触", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "无细胞壁" } },
+    "空肠弯曲菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "弯曲菌属", disease: "腹泻", transmission: "粪-口", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "食源性腹泻" } },
+    "单核增生李斯特菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "李斯特菌属", disease: "李斯特菌病", transmission: "食入", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "孕妇易感" } },
+    "嗜肺军团菌": { type: "细菌", category: "第三类", bsl: "BSL-2", family: "军团菌属", disease: "军团菌病", transmission: "呼吸道", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "空调冷却塔" } },
+    "霍乱弧菌": { type: "细菌", category: "第二类", bsl: "BSL-2", family: "弧菌科", disease: "霍乱", transmission: "粪-口", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "甲类传染病" } },
+    
+    // 第二类真菌
+    "皮炎芽生菌": { type: "真菌", category: "第二类", bsl: "BSL-3", family: "芽生菌属", disease: "芽生菌病", transmission: "吸入", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "真菌培养物A类运输" } },
+    "粗球孢子菌": { type: "真菌", category: "第二类", bsl: "BSL-3", family: "球孢子菌属", disease: "球孢子菌病", transmission: "吸入", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "沙漠风湿" } },
+    "荚膜组织胞浆菌": { type: "真菌", category: "第二类", bsl: "BSL-3", family: "组织胞浆菌属", disease: "组织胞浆菌病", transmission: "吸入", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "鸟粪传播" } },
+    "巴西副球孢子菌": { type: "真菌", category: "第二类", bsl: "BSL-3", family: "副球孢子菌属", disease: "副球孢子菌病", transmission: "吸入", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "南美芽生菌病" } },
+    
+    // 第三类真菌
+    "白念珠菌": { type: "真菌", category: "第三类", bsl: "BSL-2", family: "念珠菌属", disease: "念珠菌病", transmission: "内源性/接触", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "机会致病真菌" } },
+    "新生隐球菌": { type: "真菌", category: "第三类", bsl: "BSL-2", family: "隐球菌属", disease: "隐球菌病/脑膜炎", transmission: "吸入", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "鸽粪传播" } },
+    "烟曲霉": { type: "真菌", category: "第三类", bsl: "BSL-2", family: "曲霉属", disease: "曲霉病/过敏", transmission: "吸入", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "空气传播" } },
+    "黄曲霉": { type: "真菌", category: "第三类", bsl: "BSL-2", family: "曲霉属", disease: "曲霉病/黄曲霉毒素中毒", transmission: "食入", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "产毒素" } },
+    "毛霉": { type: "真菌", category: "第三类", bsl: "BSL-2", family: "毛霉属", disease: "毛霉病", transmission: "吸入/接触", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "侵袭性强" } },
+    "马尔尼菲篮状菌": { type: "真菌", category: "第三类", bsl: "BSL-2", family: "篮状菌属", disease: "马尔尼菲篮状菌病", transmission: "吸入", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "竹鼠传播" } },
+    "皮肤癣菌": { type: "真菌", category: "第三类", bsl: "BSL-2", family: "癣菌属", disease: "癣/脚气", transmission: "接触", disinfection: { type: "含氯消毒剂", conc: "500", unit: "mg/L", time: "10分钟", note: "表皮真菌" } },
+    "申克孢子丝菌": { type: "真菌", category: "第三类", bsl: "BSL-2", family: "孢子丝菌属", disease: "孢子丝菌病", transmission: "伤口", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "玫瑰园丁病" } },
+    "耳念珠菌": { type: "真菌", category: "第三类", bsl: "BSL-2", family: "念珠菌属", disease: "侵袭性念珠菌病", transmission: "接触", disinfection: { type: "含氯消毒剂", conc: "1000", unit: "mg/L", time: "30分钟", note: "多重耐药" } },
+    
+    // 朊病毒
+    "朊病毒": { type: "朊病毒", category: "第二类", bsl: "BSL-2/3", family: "朊蛋白", disease: "克雅病/疯牛病", transmission: "医源性/食入", disinfection: { type: "特殊处理", conc: "1N", unit: "NaOH", time: "1小时", note: "134℃高压灭菌+NaOH处理" } },
+    "疯牛病朊蛋白": { type: "朊病毒", category: "第二类", bsl: "BSL-3", family: "朊蛋白", disease: "牛海绵状脑病", transmission: "食入", disinfection: { type: "特殊处理", conc: "1N", unit: "NaOH", time: "1小时", note: "需要134℃高压灭菌" } },
+    "变异型克雅病": { type: "朊病毒", category: "第二类", bsl: "BSL-3", family: "朊蛋白", disease: "vCJD", transmission: "食入", disinfection: { type: "特殊处理", conc: "1N", unit: "NaOH", time: "1小时", note: "疯牛病相关" } }
+};
+
+// 当前选中的病原
+let currentPathogen = null;
+
+// 搜索病原微生物
+function searchPathogen(event) {
+    if (event && event.key && event.key !== 'Enter') return;
+    
+    const keyword = document.getElementById('pathogenSearch').value.trim();
+    if (!keyword) {
+        document.getElementById('pathogenResult').innerHTML = `
+            <div class="empty-state">
+                <p>🔍 请输入关键词搜索病原微生物</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const results = [];
+    for (const [name, data] of Object.entries(pathogenDB)) {
+        if (name.includes(keyword) || 
+            data.disease.includes(keyword) || 
+            data.family.includes(keyword) ||
+            (data.type && data.type.includes(keyword))) {
+            results.push({ name, ...data });
+        }
+    }
+    
+    displayPathogenResults(results);
+}
+
+// 显示搜索结果
+function displayPathogenResults(results) {
+    if (results.length === 0) {
+        document.getElementById('pathogenResult').innerHTML = `
+            <div class="empty-state">
+                <p>😔 未找到匹配的病原微生物</p>
+                <p style="font-size: 12px; color: #999;">请尝试其他关键词（如：新冠、结核、芽孢等）</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = `<div style="margin-bottom: 10px; color: #666;">找到 ${results.length} 个结果：</div>
+        <div style="max-height: 400px; overflow-y: auto;">`;
+    
+    results.forEach(item => {
+        const categoryColor = item.category === '第一类' ? '#e74c3c' : 
+                             item.category === '第二类' ? '#f39c12' : 
+                             item.category === '第三类' ? '#27ae60' : '#95a5a6';
+        const categoryBg = item.category === '第一类' ? '#ffebee' : 
+                          item.category === '第二类' ? '#fff3e0' : 
+                          item.category === '第三类' ? '#e8f5e9' : '#f5f5f5';
+        
+        html += `
+            <div class="record-card" style="cursor: pointer; border-left-color: ${categoryColor};" onclick="showPathogenDetail('${item.name}')">
+                <div class="record-header">
+                    <span style="font-weight: bold;">${item.name}</span>
+                    <span style="background: ${categoryBg}; color: ${categoryColor}; padding: 2px 8px; border-radius: 10px; font-size: 12px;">${item.category}</span>
+                </div>
+                <div style="font-size: 13px; color: #666;">
+                    <span>${item.type} | ${item.family} | BSL: ${item.bsl}</span>
+                </div>
+                <div style="font-size: 13px; color: #999; margin-top: 5px;">
+                    所致疾病: ${item.disease}
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    document.getElementById('pathogenResult').innerHTML = html;
+    document.getElementById('pathogenDetail').style.display = 'none';
+}
+
+// 显示病原详情
+function showPathogenDetail(name) {
+    const data = pathogenDB[name];
+    if (!data) return;
+    
+    currentPathogen = { name, ...data };
+    
+    const categoryColor = data.category === '第一类' ? '#e74c3c' : 
+                         data.category === '第二类' ? '#f39c12' : 
+                         data.category === '第三类' ? '#27ae60' : '#95a5a6';
+    
+    document.getElementById('detailTitle').innerHTML = `
+        <span style="color: ${categoryColor};">${name}</span> 
+        <span style="font-size: 14px; color: #666;">${data.disease}</span>
+    `;
+    
+    document.getElementById('detailContent').innerHTML = `
+        <div class="form-row">
+            <div class="form-group">
+                <label>病原类型</label>
+                <div>${data.type}</div>
+            </div>
+            <div class="form-group">
+                <label>分类学地位</label>
+                <div>${data.family}</div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>危害程度分类</label>
+                <div style="color: ${categoryColor}; font-weight: bold;">${data.category}</div>
+            </div>
+            <div class="form-group">
+                <label>生物安全实验室等级</label>
+                <div>${data.bsl}</div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>所致疾病</label>
+                <div>${data.disease}</div>
+            </div>
+            <div class="form-group">
+                <label>传播途径</label>
+                <div>${data.transmission}</div>
+            </div>
+        </div>
+    `;
+    
+    // 消毒推荐
+    const d = data.disinfection;
+    document.getElementById('disinfectionRecommendation').innerHTML = `
+        <div class="result-item">
+            <strong>推荐消毒剂：</strong>${d.type}
+        </div>
+        <div class="result-item">
+            <strong>推荐浓度：</strong><span class="highlight">${d.conc} ${d.unit}</span>
+        </div>
+        <div class="result-item">
+            <strong>作用时间：</strong>${d.time}
+        </div>
+        ${d.note ? `<div class="result-item" style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px;">
+            <strong>⚠️ 注意事项：</strong>${d.note}
+        </div>` : ''}
+    `;
+    
+    document.getElementById('pathogenDetail').style.display = 'block';
+    document.getElementById('pathogenDetail').scrollIntoView({ behavior: 'smooth' });
+}
+
+// 应用病原消毒方案
+function applyPathogenDisinfection() {
+    if (!currentPathogen) return;
+    
+    const d = currentPathogen.disinfection;
+    
+    // 设置类别
+    const categoryMap = {
+        "含氯消毒剂": "含氯消毒剂",
+        "过氧化物类": "过氧化物类",
+        "醇类": "醇类",
+        "季铵盐类": "季铵盐类",
+        "其他": "其他",
+        "特殊处理": "含氯消毒剂"
+    };
+    
+    const category = categoryMap[d.type] || "含氯消毒剂";
+    document.getElementById('category').value = category;
+    updateDisinfectants();
+    
+    // 选择具体消毒剂
+    setTimeout(() => {
+        const disinfectantSelect = document.getElementById('disinfectant');
+        for (let i = 0; i < disinfectantSelect.options.length; i++) {
+            if (disinfectantSelect.options[i].text.includes(d.type) ||
+                (d.type.includes("84") && disinfectantSelect.options[i].text.includes("84"))) {
+                disinfectantSelect.selectedIndex = i;
+                break;
+            }
+        }
+        updateConcentration();
+        
+        // 设置目标浓度
+        if (d.conc.includes('-')) {
+            document.getElementById('targetConc').value = d.conc.split('-')[0];
+        } else {
+            document.getElementById('targetConc').value = d.conc;
+        }
+        
+        const unitSelect = document.getElementById('targetUnit');
+        if (d.unit === "mg/L" || d.unit === "NaOH") {
+            unitSelect.value = "mg/L";
+        } else {
+            unitSelect.value = "%";
+        }
+        
+        // 切换到计算标签
+        document.querySelectorAll('.tab')[0].click();
+        alert(`已应用 ${currentPathogen.name} 的消毒方案：${d.type} ${d.conc}${d.unit}，${d.time}`);
+    }, 100);
+}
+
+// 清空搜索
+function clearPathogenSearch() {
+    document.getElementById('pathogenSearch').value = '';
+    document.getElementById('pathogenCategoryFilter').value = '';
+    document.getElementById('pathogenTypeFilter').value = '';
+    document.getElementById('bslFilter').value = '';
+    document.getElementById('pathogenResult').innerHTML = `
+        <div class="empty-state">
+            <p>🔍 请输入关键词搜索病原微生物，或使用筛选条件</p>
+            <p style="font-size: 12px; color: #999; margin-top: 10px;">数据来源：《人间传染的病原微生物目录》（2023年版）</p>
+        </div>
+    `;
+    document.getElementById('pathogenDetail').style.display = 'none';
+}
+
+// 按分类筛选
+function filterPathogenByCategory() {
+    const category = document.getElementById('pathogenCategoryFilter').value;
+    if (!category) {
+        document.getElementById('pathogenResult').innerHTML = `
+            <div class="empty-state">
+                <p>🔍 请选择危害程度分类或使用搜索功能</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const results = [];
+    for (const [name, data] of Object.entries(pathogenDB)) {
+        if (data.category === category) {
+            results.push({ name, ...data });
+        }
+    }
+    
+    displayPathogenResults(results);
+}
+
+// 按类型筛选
+function filterPathogenByType() {
+    const type = document.getElementById('pathogenTypeFilter').value;
+    if (!type) return;
+    
+    const results = [];
+    for (const [name, data] of Object.entries(pathogenDB)) {
+        if (data.type === type) {
+            results.push({ name, ...data });
+        }
+    }
+    
+    displayPathogenResults(results);
+}
+
+// 按BSL筛选
+function filterPathogenByBSL() {
+    const bsl = document.getElementById('bslFilter').value;
+    if (!bsl) return;
+    
+    const results = [];
+    for (const [name, data] of Object.entries(pathogenDB)) {
+        if (data.bsl.includes(bsl)) {
+            results.push({ name, ...data });
+        }
+    }
+    
+    displayPathogenResults(results);
+}
+
+// 显示第一类病原（高致病性）
+function showHighRiskPathogens() {
+    document.getElementById('pathogenCategoryFilter').value = '第一类';
+    filterPathogenByCategory();
+}
+
+// 显示呼吸道传播病原
+function showRespiratoryPathogens() {
+    const results = [];
+    for (const [name, data] of Object.entries(pathogenDB)) {
+        if (data.transmission.includes('呼吸道') || data.transmission.includes('飞沫') || data.transmission.includes('空气')) {
+            results.push({ name, ...data });
+        }
+    }
+    displayPathogenResults(results);
+}
+
+// 显示血液传播病原
+function showBloodPathogens() {
+    const results = [];
+    for (const [name, data] of Object.entries(pathogenDB)) {
+        if (data.transmission.includes('血液') || data.transmission.includes('体液')) {
+            results.push({ name, ...data });
+        }
+    }
+    displayPathogenResults(results);
+}
+
+// ==================== 病原微生物模块结束 ====================
+
+// ==================== AI配置模块 ====================
+
+// 默认AI配置
+const defaultAIConfig = {
+    provider: 'kimi',
+    baseUrl: 'https://api.moonshot.cn/v1',
+    apiKey: '',
+    model: 'kimi-coding/k2p5',
+    temperature: 0.7,
+    maxTokens: 4096,
+    localMode: false
+};
+
+// AI提供商配置模板
+const aiProviderTemplates = {
+    kimi: {
+        baseUrl: 'https://api.moonshot.cn/v1',
+        model: 'kimi-coding/k2p5',
+        name: 'Kimi (Moonshot)'
+    },
+    openai: {
+        baseUrl: 'https://api.openai.com/v1',
+        model: 'gpt-4',
+        name: 'OpenAI'
+    },
+    claude: {
+        baseUrl: 'https://api.anthropic.com/v1',
+        model: 'claude-3-opus-20240229',
+        name: 'Claude (Anthropic)'
+    },
+    custom: {
+        baseUrl: '',
+        model: '',
+        name: '自定义 API'
+    }
+};
+
+// 加载AI配置
+function loadAIConfig() {
+    const saved = localStorage.getItem('aiConfig');
+    if (saved) {
+        return { ...defaultAIConfig, ...JSON.parse(saved) };
+    }
+    return defaultAIConfig;
+}
+
+// 保存AI配置
+function saveAIConfig() {
+    const config = {
+        provider: document.getElementById('aiProvider').value,
+        baseUrl: document.getElementById('aiBaseUrl').value,
+        apiKey: document.getElementById('aiApiKey').value,
+        model: document.getElementById('aiModel').value,
+        temperature: parseFloat(document.getElementById('aiTemperature').value),
+        maxTokens: parseInt(document.getElementById('aiMaxTokens').value),
+        localMode: document.getElementById('aiLocalMode').checked
+    };
+    
+    localStorage.setItem('aiConfig', JSON.stringify(config));
+    
+    // 显示保存成功提示
+    const resultDiv = document.getElementById('aiTestResult');
+    resultDiv.innerHTML = `
+        <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 12px; border-radius: 5px; color: #155724;">
+            ✅ 配置已保存到本地
+        </div>
+    `;
+    
+    setTimeout(() => {
+        resultDiv.innerHTML = '';
+    }, 3000);
+}
+
+// 恢复默认配置
+function resetAIConfig() {
+    if (!confirm('确定恢复默认配置吗？当前配置将被覆盖。')) {
+        return;
+    }
+    
+    localStorage.removeItem('aiConfig');
+    displayAIConfig(defaultAIConfig);
+    
+    const resultDiv = document.getElementById('aiTestResult');
+    resultDiv.innerHTML = `
+        <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 12px; border-radius: 5px; color: #155724;">
+            ✅ 已恢复默认配置
+        </div>
+    `;
+    
+    setTimeout(() => {
+        resultDiv.innerHTML = '';
+    }, 3000);
+}
+
+// 显示AI配置
+function displayAIConfig(config) {
+    document.getElementById('aiProvider').value = config.provider;
+    document.getElementById('aiBaseUrl').value = config.baseUrl;
+    document.getElementById('aiApiKey').value = config.apiKey;
+    document.getElementById('aiModel').value = config.model;
+    document.getElementById('aiTemperature').value = config.temperature;
+    document.getElementById('tempValue').textContent = config.temperature;
+    document.getElementById('aiMaxTokens').value = config.maxTokens;
+    document.getElementById('aiLocalMode').checked = config.localMode;
+}
+
+// 更新AI配置字段（当选择不同提供商时）
+function updateAIConfigFields() {
+    const provider = document.getElementById('aiProvider').value;
+    const template = aiProviderTemplates[provider];
+    
+    if (template && provider !== 'custom') {
+        document.getElementById('aiBaseUrl').value = template.baseUrl;
+        document.getElementById('aiModel').value = template.model;
+    }
+}
+
+// 测试AI连接
+async function testAIConnection() {
+    const config = {
+        provider: document.getElementById('aiProvider').value,
+        baseUrl: document.getElementById('aiBaseUrl').value,
+        apiKey: document.getElementById('aiApiKey').value,
+        model: document.getElementById('aiModel').value
+    };
+
+    const resultDiv = document.getElementById('aiTestResult');
+
+    if (!config.apiKey) {
+        resultDiv.innerHTML = `
+            <div style="background: #f8d7da; border-left: 4px solid #dc3545; padding: 12px; border-radius: 5px; color: #721c24;">
+                ❌ 请先输入API Key
+            </div>
+        `;
+        return;
+    }
+
+    resultDiv.innerHTML = `
+        <div style="background: #e7f3ff; border-left: 4px solid #0066cc; padding: 12px; border-radius: 5px; color: #004085;">
+            ⏳ 正在测试连接...
+        </div>
+    `;
+
+    try {
+        // 处理baseUrl末尾斜杠
+        let baseUrl = config.baseUrl.trim();
+        if (baseUrl.endsWith('/')) {
+            baseUrl = baseUrl.slice(0, -1);
+        }
+
+        // 构建请求头
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${config.apiKey}`
+        };
+
+        // 构建请求体（简单测试消息）
+        const body = JSON.stringify({
+            model: config.model,
+            messages: [
+                { role: 'user', content: '你好，这是一条测试消息，请回复"连接成功"。' }
+            ],
+            max_tokens: 50,
+            temperature: 0.7
+        });
+
+        // 使用AbortController实现超时
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超时
+
+        // 发送测试请求
+        const response = await fetch(`${baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: headers,
+            body: body,
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+            const data = await response.json();
+            const reply = data.choices?.[0]?.message?.content || '无回复内容';
+            resultDiv.innerHTML = `
+                <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 12px; border-radius: 5px; color: #155724;">
+                    ✅ 连接成功！模型: ${config.model}
+                    <br><small>回复: ${reply.substring(0, 50)}${reply.length > 50 ? '...' : ''}</small>
+                </div>
+            `;
+        } else {
+            // 改进错误处理 - 先尝试获取文本，再尝试JSON
+            let errorMessage = `HTTP ${response.status}`;
+            try {
+                const errorText = await response.text();
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    errorMessage = errorJson.error?.message || errorJson.message || errorText;
+                } catch {
+                    errorMessage = errorText || `HTTP ${response.status}`;
+                }
+            } catch {
+                errorMessage = `HTTP ${response.status}`;
+            }
+            throw new Error(errorMessage);
+        }
+    } catch (error) {
+        let errorMsg = error.message;
+        let suggestion = '';
+
+        // 针对常见错误提供具体建议
+        if (error.name === 'AbortError') {
+            errorMsg = '请求超时（15秒）';
+            suggestion = '请检查网络连接或API服务状态';
+        } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+            errorMsg = '网络请求失败';
+            suggestion = '1. 检查网络连接<br>2. 如果是本地部署，请确认服务已启动<br>3. 检查API地址是否正确<br>4. 可能是CORS跨域问题（需配置代理）';
+        } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+            errorMsg = 'API Key 无效或已过期';
+            suggestion = '请检查API Key是否正确';
+        } else if (error.message.includes('404')) {
+            errorMsg = 'API地址不存在';
+            suggestion = '请检查Base URL是否正确，确保包含 /v1 路径';
+        } else if (error.message.includes('429')) {
+            errorMsg = '请求过于频繁或额度不足';
+            suggestion = '请稍后重试或检查API额度';
+        }
+
+        resultDiv.innerHTML = `
+            <div style="background: #f8d7da; border-left: 4px solid #dc3545; padding: 12px; border-radius: 5px; color: #721c24;">
+                ❌ 连接失败: ${errorMsg}
+                ${suggestion ? `<br><small style="margin-top: 8px; display: block;">💡 ${suggestion}</small>` : ''}
+            </div>
+        `;
+    }
+}
+
+// 初始化AI配置页面
+function initAIConfig() {
+    const config = loadAIConfig();
+    displayAIConfig(config);
+}
+
+// 在初始化函数中调用
+const originalInit = init;
+init = function() {
+    originalInit();
+    // 页面加载完成后初始化AI配置
+    if (document.getElementById('aiConfig')) {
+        initAIConfig();
+    }
+};
+
+// ==================== AI配置模块结束 ====================
     </script>
     
     <footer style="text-align: center; padding: 20px; color: white; margin-top: 30px; font-size: 14px; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">
-        <p style="margin: 5px 0;">柳州市疾病预防控制中心 消毒与病媒生物防制所</p>
+        <p style="margin: 5px 0;">🧬 柳州市疾病预防控制中心 病原微生物防控系统</p>
+        <p style="margin: 5px 0;">消毒与病媒生物防制所</p>
         <p style="margin: 5px 0; font-size: 12px; opacity: 0.8;">未经许可不得修改或商用</p>
     </footer>
 </body>
